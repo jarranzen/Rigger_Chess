@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>Rigger Chess</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d0d0d;
+  --surface: #1a1a1a;
+  --surface-2: #242424;
+  --surface-3: #2e2e2e;
+  --orange: #e8600a;
+  --orange-dim: #b34a08;
+  --orange-glow: #ff7a1a;
+  --red: #c23030;
+  --red-glow: #ff4444;
+  --green: #2a9d2a;
+  --text: #e0ddd5;
+  --text-dim: #7a7770;
+  --text-muted: #4a4840;
+  --cream: #f0ead6;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Archivo Black', sans-serif;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.screen { display: none; height: 100%; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ====== SETUP ====== */
+#setup-screen {
+  padding: 16px;
+  gap: 12px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-header {
+  text-align: center;
+  padding: 16px 0 6px;
+  position: relative;
+}
+
+.app-header h1 {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 5.5vw, 24px);
+  letter-spacing: 2px;
+  color: var(--orange);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.app-header .subtitle {
+  font-size: 10px;
+  letter-spacing: 6px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.app-header .header-actions {
+  position: absolute;
+  right: 0;
+  top: 16px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  background: var(--surface);
+  border: 1px solid var(--surface-3);
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-btn:active { background: var(--orange-dim); color: var(--cream); }
+
+.app-header::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 2px;
+  background: var(--orange);
+  margin: 10px auto 0;
+}
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--surface-3);
+  border-left: 3px solid var(--orange);
+  padding: 14px;
+  border-radius: 2px;
+}
+
+.section-label {
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--orange);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.mode-tabs, .penalty-options {
+  display: flex;
+  gap: 2px;
+  background: var(--bg);
+  padding: 2px;
+  border-radius: 2px;
+}
+
+.mode-tab, .penalty-tab {
+  flex: 1;
+  padding: 11px 6px;
+  background: var(--surface);
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.mode-tab.active { background: var(--orange); color: var(--bg); font-weight: 700; }
+.penalty-tab { font-size: 10px; letter-spacing: 0.5px; }
+.penalty-tab.active { background: var(--red); color: var(--cream); font-weight: 700; }
+
+.mode-desc, .penalty-desc, .handicap-info {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg);
+  border-radius: 2px;
+}
+
+.handicap-info { font-size: 10px; line-height: 1.5; }
+
+.time-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.time-btn {
+  padding: 10px 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 2px;
+  text-align: center;
+}
+
+.time-btn.active {
+  background: var(--orange-dim);
+  border-color: var(--orange);
+  color: var(--cream);
+  font-weight: 700;
+}
+
+.custom-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.custom-time label {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.custom-time input, .inline-input {
+  background: var(--bg);
+  border: 1px solid var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 2px;
+  text-align: center;
+  width: 60px;
+}
+
+.challenge-row { display: flex; gap: 8px; }
+
+.player-challenge {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--surface-3);
+  padding: 10px;
+  border-radius: 2px;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+}
+
+.player-challenge .player-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.player-challenge .challenge-name {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.player-challenge .challenge-detail {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.challenge-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.challenge-btn {
+  padding: 10px 4px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 2px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.challenge-btn:active { background: var(--orange-dim); }
+
+.challenge-btn-wide {
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 2px;
+  text-align: center;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.challenge-btn-wide:active { background: var(--orange-dim); }
+.challenge-btn-accent { background: var(--orange-dim); color: var(--cream); border-color: var(--orange); }
+
+.handicap-row { display: flex; gap: 8px; align-items: center; }
+
+.handicap-player { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+
+.handicap-player label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.handicap-select {
+  background: var(--bg);
+  border: 1px solid var(--surface-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 8px 4px;
+  border-radius: 2px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.handicap-vs { font-size: 10px; color: var(--text-muted); padding-top: 16px; }
+
+.penalty-config { display: none; margin-top: 8px; }
+.penalty-config.visible { display: flex; }
+
+.start-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--orange);
+  border: none;
+  color: var(--bg);
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.start-btn:active { background: var(--orange-glow); transform: scale(0.98); }
+
+/* ====== GAME SCREEN ====== */
+#game-screen { position: relative; }
+
+.game-container { display: flex; flex-direction: column; height: 100%; }
+
+.player-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.player-zone.top { transform: rotate(180deg); }
+.player-zone.inactive { background: var(--surface); opacity: 0.6; }
+.player-zone.active-turn { background: var(--bg); }
+
+.player-zone.active-turn .timer-display {
+  color: var(--orange-glow);
+  text-shadow: 0 0 30px rgba(232, 96, 10, 0.3);
+}
+
+.player-zone.timed-out { background: var(--red); opacity: 1; }
+.player-zone.timed-out .timer-display { color: var(--cream); animation: flash-out 0.5s infinite; }
+
+@keyframes flash-out { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.player-zone.penalty-flash { animation: penalty-pulse 0.3s ease; }
+@keyframes penalty-pulse {
+  0% { background: var(--bg); }
+  50% { background: rgba(194, 48, 48, 0.3); }
+  100% { background: var(--bg); }
+}
+
+.player-zone-info { text-align: center; pointer-events: none; }
+
+.player-id {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.timer-display {
+  font-family: var(--font-mono);
+  font-size: clamp(48px, 12vw, 80px);
+  font-weight: 800;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.player-challenge-display {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  max-width: 280px;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.player-handicap-display { font-size: 10px; color: var(--orange-dim); margin-top: 2px; }
+
+.player-score { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.score-label { font-size: 9px; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; }
+.score-value { font-size: 28px; font-weight: 800; color: var(--orange); }
+
+.tap-hint {
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 8px;
+  opacity: 0.6;
+}
+
+.penalty-count { font-size: 10px; color: var(--red); margin-top: 2px; }
+
+.center-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--surface-3);
+  border-bottom: 1px solid var(--surface-3);
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.center-btn {
+  width: 38px;
+  height: 38px;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-3);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.center-btn:active { background: var(--orange-dim); color: var(--cream); }
+
+.center-btn.pause-btn {
+  width: 44px;
+  height: 44px;
+  background: var(--orange-dim);
+  border-color: var(--orange);
+  color: var(--cream);
+  font-size: 16px;
+}
+
+.center-btn.penalty-btn {
+  background: var(--red);
+  border-color: var(--red-glow);
+  color: var(--cream);
+  font-size: 10px;
+  font-weight: 700;
+  width: auto;
+  padding: 0 8px;
+  letter-spacing: 0.5px;
+}
+
+.game-mode-label {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ====== RESULTS ====== */
+#results-screen {
+  padding: 20px;
+  gap: 16px;
+  overflow-y: auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.results-header h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--orange);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-3);
+  padding: 16px;
+  border-radius: 2px;
+  text-align: center;
+}
+
+.result-card.winner { border-color: var(--orange); border-left: 3px solid var(--orange); }
+
+.result-card .r-player { font-size: 9px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+.result-card .r-score { font-size: 28px; font-weight: 800; color: var(--orange); }
+.result-card .r-time { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+.result-card .r-challenge { font-size: 10px; color: var(--text-muted); margin-top: 8px; line-height: 1.4; white-space: pre-line; }
+.result-card .r-penalties { font-size: 10px; color: var(--red); margin-top: 4px; }
+
+.results-actions { display: flex; gap: 8px; width: 100%; max-width: 400px; }
+
+.results-actions button {
+  flex: 1;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.btn-rematch { background: var(--orange); color: var(--bg); }
+.btn-setup { background: var(--surface); border: 1px solid var(--surface-3) !important; color: var(--text); }
+
+/* ====== MODALS ====== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 100;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal-content {
+  background: var(--surface);
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--surface-3);
+  flex-shrink: 0;
+}
+
+.modal-header h3 {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--orange);
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.modal-body {
+  overflow-y: auto;
+  padding: 12px;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+.challenge-category, .info-section { margin-bottom: 14px; }
+
+.challenge-category h4, .info-section h4 {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--orange);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--surface-3);
+}
+
+.challenge-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 8px;
+  cursor: pointer;
+  border-radius: 2px;
+  gap: 8px;
+}
+
+.challenge-option:active { background: var(--orange-dim); }
+
+.challenge-option .ch-name { font-size: 13px; color: var(--text); font-weight: 500; }
+.challenge-option .ch-desc { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+.ch-tier {
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.tier-1 { background: var(--green); color: var(--bg); }
+.tier-2 { background: var(--orange-dim); color: var(--cream); }
+.tier-3 { background: var(--red); color: var(--cream); }
+
+.info-item { padding: 6px 0; border-bottom: 1px solid var(--surface-3); }
+.info-item:last-child { border-bottom: none; }
+.info-item .info-name { font-size: 12px; color: var(--text); font-weight: 500; }
+.info-item .info-desc { font-size: 10px; color: var(--text-dim); margin-top: 2px; line-height: 1.4; }
+.info-text { font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+.info-text p { margin-bottom: 8px; }
+.info-text p:last-child { margin-bottom: 0; }
+
+/* Pause */
+.pause-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(13,13,13,0.95);
+  z-index: 50;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pause-overlay.open { display: flex; }
+
+.pause-overlay h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--orange);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.pause-actions { display: flex; flex-direction: column; gap: 10px; width: 200px; }
+
+.pause-actions button {
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.btn-resume { background: var(--orange); color: var(--bg); }
+.btn-end { background: var(--surface-2); border: 1px solid var(--surface-3); color: var(--text); }
+
+.wake-lock-indicator {
+  position: fixed;
+  top: 6px;
+  right: 8px;
+  font-size: 8px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  z-index: 5;
+}
+
+.install-prompt {
+  display: none;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--orange-dim);
+  border-radius: 2px;
+  font-size: 11px;
+  color: var(--text-dim);
+  cursor: pointer;
+  text-align: center;
+}
+
+.install-prompt:active { background: var(--orange-dim); color: var(--cream); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup-screen" class="screen active">
+  <div class="app-header">
+    <h1>Rigger Chess</h1>
+    <div class="subtitle">Knot What You Expect</div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="openInfoModal()" title="Reference Library">☰</button>
+    </div>
+  </div>
+
+  <div id="install-prompt" class="install-prompt" onclick="installApp()">Install for offline use</div>
+
+  <div class="section">
+    <div class="section-label">Game Mode</div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="countdown" onclick="setMode('countdown')">Countdown</button>
+      <button class="mode-tab" data-mode="amrap" onclick="setMode('amrap')">AMRAP</button>
+      <button class="mode-tab" data-mode="duel" onclick="setMode('duel')">Duel</button>
+    </div>
+    <div class="mode-desc" id="mode-desc">Chess-clock countdown. Your timer runs on your turn. Complete your challenge and tap your own zone to pass the clock. Run out of time, you lose.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Time</div>
+    <div class="time-presets">
+      <button class="time-btn" data-time="120" onclick="setTime(120)">2:00</button>
+      <button class="time-btn active" data-time="300" onclick="setTime(300)">5:00</button>
+      <button class="time-btn" data-time="600" onclick="setTime(600)">10:00</button>
+      <button class="time-btn" data-time="900" onclick="setTime(900)">15:00</button>
+    </div>
+    <div class="custom-time">
+      <label>Custom</label>
+      <input type="number" id="custom-minutes" placeholder="min" min="1" max="60" onchange="setCustomTime()">
+      <span style="color:var(--text-muted);font-size:12px;">:</span>
+      <input type="number" id="custom-seconds" placeholder="sec" min="0" max="59" onchange="setCustomTime()">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Challenge</div>
+    <div class="challenge-row">
+      <div class="player-challenge">
+        <div class="player-label">Player 1</div>
+        <div class="challenge-name" id="p1-challenge-name">Single Column Tie</div>
+        <div class="challenge-detail" id="p1-challenge-detail">Bight-start SCT, dress flat, lock off</div>
+      </div>
+      <div class="player-challenge">
+        <div class="player-label">Player 2</div>
+        <div class="challenge-name" id="p2-challenge-name">Single Column Tie</div>
+        <div class="challenge-detail" id="p2-challenge-detail">Bight-start SCT, dress flat, lock off</div>
+      </div>
+    </div>
+    <div class="challenge-buttons">
+      <button class="challenge-btn" onclick="openPicker(1)">P1 Pick</button>
+      <button class="challenge-btn" onclick="randCh(1)">P1 Rand</button>
+      <button class="challenge-btn" onclick="openPicker(2)">P2 Pick</button>
+      <button class="challenge-btn" onclick="randCh(2)">P2 Rand</button>
+    </div>
+    <button class="challenge-btn-wide challenge-btn-accent" onclick="randBoth()">Random Both</button>
+    <button class="challenge-btn-wide" onclick="mirrorCh()">Mirror (Same for Both)</button>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Completion Standard</div>
+    <div class="handicap-row">
+      <div class="handicap-player">
+        <label>Player 1</label>
+        <select class="handicap-select" id="p1-handicap">
+          <option value="full">Tie + untie + hank</option>
+          <option value="system">Full tie + untie</option>
+          <option value="tie-only" selected>Tie to completion</option>
+          <option value="partial">Wraps only (no lock-off)</option>
+        </select>
+      </div>
+      <div class="handicap-vs">vs</div>
+      <div class="handicap-player">
+        <label>Player 2</label>
+        <select class="handicap-select" id="p2-handicap">
+          <option value="full">Tie + untie + hank</option>
+          <option value="system">Full tie + untie</option>
+          <option value="tie-only" selected>Tie to completion</option>
+          <option value="partial">Wraps only (no lock-off)</option>
+        </select>
+      </div>
+    </div>
+    <div class="handicap-info">
+      <strong style="color:var(--text-dim)">Tie + untie + hank:</strong> Complete the tie, fully untie everything, then re-hank all rope neatly. The full cycle.<br><br>
+      <strong style="color:var(--text-dim)">Full tie + untie:</strong> Complete the tie then fully remove all rope from the column/body. No hank required.<br><br>
+      <strong style="color:var(--text-dim)">Tie to completion:</strong> Finish the tie with proper lock-off or finishing knot. Standard completion.<br><br>
+      <strong style="color:var(--text-dim)">Wraps only:</strong> Complete the wraps and structure but skip the final lock-off. For newer riggers building wrap speed and rope handling.
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">Penalty Rule</div>
+    <div class="penalty-options">
+      <button class="penalty-tab active" data-penalty="none" onclick="setPen('none')">None</button>
+      <button class="penalty-tab" data-penalty="restart" onclick="setPen('restart')">Restart</button>
+      <button class="penalty-tab" data-penalty="time" onclick="setPen('time')">Time</button>
+      <button class="penalty-tab" data-penalty="choose" onclick="setPen('choose')">Choose</button>
+    </div>
+    <div class="penalty-config" id="penalty-time-config">
+      <div class="custom-time" style="margin-top:0;">
+        <label>Penalty</label>
+        <input type="number" id="penalty-seconds" value="15" min="5" max="120" class="inline-input" style="width:60px;">
+        <span style="color:var(--text-dim);font-size:11px;">sec penalty</span>
+      </div>
+    </div>
+    <div class="penalty-desc" id="penalty-desc">No penalties. Mistakes are between you and the rope.</div>
+  </div>
+
+  <button class="start-btn" onclick="startGame()">Start</button>
+</div>
+
+<!-- GAME -->
+<div id="game-screen" class="screen">
+  <div class="wake-lock-indicator" id="wake-indicator"></div>
+  <div class="game-container">
+    <div class="player-zone top inactive" id="p2-zone" onclick="zoneClick(2)">
+      <div class="player-zone-info">
+        <div class="player-id">Player 2</div>
+        <div class="timer-display" id="p2-timer">05:00</div>
+        <div class="player-challenge-display" id="p2-game-challenge"></div>
+        <div class="player-handicap-display" id="p2-game-handicap"></div>
+        <div class="player-score" id="p2-score-area" style="display:none;">
+          <span class="score-label">Reps</span>
+          <span class="score-value" id="p2-score">0</span>
+        </div>
+        <div class="player-score" id="p2-round-area" style="display:none;">
+          <span class="score-label">Rounds</span>
+          <span class="score-value" id="p2-rounds">0</span>
+        </div>
+        <div class="penalty-count" id="p2-penalties"></div>
+        <div class="tap-hint" id="p2-hint"></div>
+      </div>
+    </div>
+
+    <div class="center-bar">
+      <button class="center-btn penalty-btn" id="p1-penalty-btn" onclick="penaltyHit(1)" style="display:none;">P1 ✕</button>
+      <div style="text-align:center;flex:1;">
+        <div class="game-mode-label" id="game-mode-label">COUNTDOWN</div>
+        <div class="game-mode-label" id="game-penalty-label"></div>
+      </div>
+      <button class="center-btn pause-btn" onclick="togglePause()">⏸</button>
+      <div style="flex:1;"></div>
+      <button class="center-btn penalty-btn" id="p2-penalty-btn" onclick="penaltyHit(2)" style="display:none;">P2 ✕</button>
+    </div>
+
+    <div class="player-zone inactive" id="p1-zone" onclick="zoneClick(1)">
+      <div class="player-zone-info">
+        <div class="player-id">Player 1</div>
+        <div class="timer-display" id="p1-timer">05:00</div>
+        <div class="player-challenge-display" id="p1-game-challenge"></div>
+        <div class="player-handicap-display" id="p1-game-handicap"></div>
+        <div class="player-score" id="p1-score-area" style="display:none;">
+          <span class="score-label">Reps</span>
+          <span class="score-value" id="p1-score">0</span>
+        </div>
+        <div class="player-score" id="p1-round-area" style="display:none;">
+          <span class="score-label">Rounds</span>
+          <span class="score-value" id="p1-rounds">0</span>
+        </div>
+        <div class="penalty-count" id="p1-penalties"></div>
+        <div class="tap-hint" id="p1-hint"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-screen" class="screen">
+  <div class="results-header"><h2 id="results-title">Time!</h2></div>
+  <div class="results-grid">
+    <div class="result-card" id="r-p1">
+      <div class="r-player">Player 1</div>
+      <div class="r-score" id="r-p1-score">0</div>
+      <div class="r-time" id="r-p1-time">00:00</div>
+      <div class="r-challenge" id="r-p1-challenge"></div>
+      <div class="r-penalties" id="r-p1-penalties"></div>
+    </div>
+    <div class="result-card" id="r-p2">
+      <div class="r-player">Player 2</div>
+      <div class="r-score" id="r-p2-score">0</div>
+      <div class="r-time" id="r-p2-time">00:00</div>
+      <div class="r-challenge" id="r-p2-challenge"></div>
+      <div class="r-penalties" id="r-p2-penalties"></div>
+    </div>
+  </div>
+  <div class="results-actions">
+    <button class="btn-rematch" onclick="rematch()">Rematch</button>
+    <button class="btn-setup" onclick="goSetup()">Setup</button>
+  </div>
+</div>
+
+<!-- CHALLENGE PICKER -->
+<div class="modal-overlay" id="challenge-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modal-title">Select Challenge</h3>
+      <button class="modal-close" onclick="closeModal('challenge-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- INFO / REFERENCE -->
+<div class="modal-overlay" id="info-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Reference Library</h3>
+      <button class="modal-close" onclick="closeModal('info-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="info-body"></div>
+  </div>
+</div>
+
+<!-- PAUSE -->
+<div class="pause-overlay" id="pause-overlay">
+  <h2>Paused</h2>
+  <div class="pause-actions">
+    <button class="btn-resume" onclick="togglePause()">Resume</button>
+    <button class="btn-end" onclick="endGame()">End Game</button>
+  </div>
+</div>
+
+
+<script>
+// =========================================
+// CHALLENGE LIBRARY — Shibari only
+// =========================================
+const CHALLENGES = {
+  "Knots & Frictions": [
+    { name: "Single Column Tie", desc: "Bight-start SCT, dress flat, lock off", tier: 1 },
+    { name: "Double Column Tie", desc: "Bight-start DCT binding two columns, dress, lock off", tier: 1 },
+    { name: "Honmusubi", desc: "Traditional horizontal start knot", tier: 2 },
+    { name: "Tatemusubi", desc: "Vertical start knot", tier: 2 },
+    { name: "Nodome / Crossing Hitch", desc: "Closed-form friction where rope crosses a wrap", tier: 2 },
+    { name: "X-Friction", desc: "Crossing friction for chest harnesses and gotes", tier: 2 },
+    { name: "Half Moon Friction", desc: "Hakadome; used in chest harness construction", tier: 2 },
+    { name: "Ram's Head", desc: "Locking friction for gote and chest work", tier: 2 },
+    { name: "Flag Friction", desc: "Friction used in gote/TK construction", tier: 2 },
+    { name: "Teardrop", desc: "Direction-change friction", tier: 2 },
+    { name: "Half Hitch Lock", desc: "Half hitch as direction change or lock-off point", tier: 1 },
+    { name: "Lark's Head Extension", desc: "Joining a new rope onto an existing line mid-tie", tier: 1 },
+    { name: "Collapsed Lark's Head", desc: "Inline extension; works with whipped rope ends", tier: 2 },
+    { name: "Somerville Bowline", desc: "Non-collapsing SCT; stays open under zero tension", tier: 2 },
+    { name: "Burlington Bowline", desc: "Inline bowline variant for mid-line attachment", tier: 2 },
+  ],
+  "Ties & Patterns": [
+    { name: "Futomomo", desc: "Thigh-to-calf folded leg tie", tier: 1 },
+    { name: "TK2 (2-rope Gote)", desc: "Two-rope chest harness / takate kote", tier: 2 },
+    { name: "TK3 (3-rope Gote)", desc: "Three-rope chest harness; target sub-10 min", tier: 3 },
+    { name: "Hip Harness", desc: "Weight-bearing hip tie for partial suspension", tier: 2 },
+    { name: "Hishi Karada", desc: "Diamond-pattern full body harness", tier: 2 },
+    { name: "Ebi / Shrimp Tie", desc: "Forward-fold seated position, knees to chest", tier: 3 },
+    { name: "Gyaku Ebi", desc: "Reverse shrimp / hogtie position", tier: 3 },
+    { name: "Agura", desc: "Cross-legged seated bind", tier: 2 },
+    { name: "Strappado", desc: "Arms behind, wrists drawn upward", tier: 3 },
+    { name: "Wrist-to-Thigh", desc: "DCT connecting wrist to thigh", tier: 1 },
+    { name: "Ankle-to-Thigh", desc: "DCT binding ankle to thigh in folded position", tier: 1 },
+    { name: "Tengu / Arm Binder", desc: "Full arm restriction behind the back", tier: 2 },
+    { name: "Box Tie Variation", desc: "Modified TK with alternate wrapping path", tier: 2 },
+  ],
+  "Uplines & Suspension Prep": [
+    { name: "Single Point Upline", desc: "One line from tie to hard point via ring or carabiner", tier: 1 },
+    { name: "Two-Point Spread", desc: "Load distributed across two hard point attachments", tier: 2 },
+    { name: "Munter Hitch Upline", desc: "Adjustable upline using munter on carabiner", tier: 2 },
+    { name: "Line Lock-Off", desc: "Secure lock-off of upline at desired height under load", tier: 2 },
+    { name: "Rope-Only Upline", desc: "No hardware; friction-based attachment to hard point", tier: 3 },
+  ],
+  "Drills": [
+    { name: "Hank → Deploy → Hank", desc: "Full cycle: neat hank, deploy to bight, re-hank clean", tier: 1 },
+    { name: "Tension Control Run", desc: "3m of consistent-tension wraps on a limb or post", tier: 1 },
+    { name: "One-Handed SCT", desc: "Single column tie using one hand only", tier: 2 },
+    { name: "Blindfolded SCT", desc: "Single column tie eyes closed; pure muscle memory", tier: 2 },
+    { name: "Extension Drill", desc: "3 rope extensions in sequence, clean flat joins", tier: 2 },
+    { name: "Emergency Release", desc: "Full system removal with shears; fastest safe exit", tier: 2 },
+    { name: "Dress and Adjust", desc: "Tie any system then dress every wrap flat and even", tier: 1 },
+    { name: "Friction Gauntlet", desc: "Nodome → X-friction → Half Moon → Flag in sequence", tier: 3 },
+    { name: "Speed Futomomo", desc: "Futomomo from hank to completion, timed", tier: 2 },
+  ]
+};
+
+const HANDICAP_LABELS = {
+  'full': 'Tie + untie + hank',
+  'system': 'Full tie + untie',
+  'tie-only': 'Tie to completion',
+  'partial': 'Wraps only'
+};
+
+const MODE_DESCS = {
+  countdown: "Chess-clock countdown. Your timer runs on your turn. Complete your challenge and tap your own zone to pass the clock. Run out of time, you lose.",
+  amrap: "As Many Reps As Possible. Shared countdown. Both work simultaneously. Tap your zone each time you finish a rep. Most reps when time runs out wins.",
+  duel: "Head-to-head race. Both timers start together. First to finish and tap their zone wins."
+};
+
+const PENALTY_DESCS = {
+  none: "No penalties. Mistakes are between you and the rope.",
+  restart: "Mistake called = start over. Clock keeps running. You untie and restart from scratch.",
+  time: "Mistake called = time penalty. Countdown/Duel: lose seconds off your clock. AMRAP: lose a rep.",
+  choose: "Mistake called = you choose: take the time/rep penalty, or restart from scratch. Strategic call under pressure."
+};
+
+// =========================================
+// STATE
+// =========================================
+let S = {
+  mode: 'countdown', timePerPlayer: 300,
+  penalty: 'none', penaltySeconds: 15,
+  p1: { ch: null, hcap: 'tie-only', time: 300, score: 0, pens: 0, rounds: 0 },
+  p2: { ch: null, hcap: 'tie-only', time: 300, score: 0, pens: 0, rounds: 0 },
+  turn: 0, running: false, paused: false, over: false,
+  intv: null, lastT: 0, wl: null, modalP: 1,
+};
+
+S.p1.ch = CHALLENGES["Knots & Frictions"][0];
+S.p2.ch = CHALLENGES["Knots & Frictions"][0];
+
+// =========================================
+// SETUP
+// =========================================
+function setMode(m) {
+  S.mode = m;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
+  document.getElementById('mode-desc').textContent = MODE_DESCS[m];
+}
+
+function setTime(s) {
+  S.timePerPlayer = s;
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.toggle('active', +b.dataset.time === s));
+  document.getElementById('custom-minutes').value = '';
+  document.getElementById('custom-seconds').value = '';
+}
+
+function setCustomTime() {
+  const m = parseInt(document.getElementById('custom-minutes').value) || 0;
+  const s = parseInt(document.getElementById('custom-seconds').value) || 0;
+  if (m > 0 || s > 0) { S.timePerPlayer = m * 60 + s; document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active')); }
+}
+
+function setPen(type) {
+  S.penalty = type;
+  document.querySelectorAll('.penalty-tab').forEach(t => t.classList.toggle('active', t.dataset.penalty === type));
+  document.getElementById('penalty-desc').textContent = PENALTY_DESCS[type];
+  document.getElementById('penalty-time-config').className = (type === 'time' || type === 'choose') ? 'penalty-config visible' : 'penalty-config';
+}
+
+function openPicker(p) {
+  S.modalP = p;
+  document.getElementById('modal-title').textContent = `Player ${p} — Select Challenge`;
+  const body = document.getElementById('modal-body');
+  body.innerHTML = '';
+  for (const [cat, items] of Object.entries(CHALLENGES)) {
+    const d = document.createElement('div');
+    d.className = 'challenge-category';
+    d.innerHTML = `<h4>${cat}</h4>`;
+    items.forEach(ch => {
+      const o = document.createElement('div');
+      o.className = 'challenge-option';
+      o.innerHTML = `<div><div class="ch-name">${ch.name}</div><div class="ch-desc">${ch.desc}</div></div><span class="ch-tier tier-${ch.tier}">T${ch.tier}</span>`;
+      o.onclick = () => selCh(p, ch);
+      d.appendChild(o);
+    });
+    body.appendChild(d);
+  }
+  document.getElementById('challenge-modal').classList.add('open');
+}
+
+function selCh(p, ch) {
+  S[`p${p}`].ch = ch;
+  document.getElementById(`p${p}-challenge-name`).textContent = ch.name;
+  document.getElementById(`p${p}-challenge-detail`).textContent = ch.desc;
+  closeModal('challenge-modal');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function randCh(p) {
+  const all = Object.values(CHALLENGES).flat();
+  selCh(p, all[Math.floor(Math.random() * all.length)]);
+}
+
+function randBoth() { randCh(1); randCh(2); }
+
+function mirrorCh() {
+  const all = Object.values(CHALLENGES).flat();
+  const ch = all[Math.floor(Math.random() * all.length)];
+  selCh(1, ch); selCh(2, ch);
+}
+
+// =========================================
+// INFO MODAL
+// =========================================
+function openInfoModal() {
+  const body = document.getElementById('info-body');
+  body.innerHTML = '';
+
+  const ins = document.createElement('div');
+  ins.className = 'info-section';
+  ins.innerHTML = `<h4>How to Play</h4><div class="info-text">
+    <p><strong style="color:var(--orange)">Countdown:</strong> Chess-clock style. Tap your own zone to pass the clock after completing your challenge. Your timer runs while it's your turn. If it hits zero, you lose.</p>
+    <p><strong style="color:var(--orange)">AMRAP:</strong> Shared timer counts down. Both players work simultaneously. Tap your own zone each time you finish a rep. Most reps when the clock hits zero wins.</p>
+    <p><strong style="color:var(--orange)">Duel:</strong> Both timers run from the start. First player to complete their challenge and tap their zone wins.</p>
+    <p><strong style="color:var(--orange)">Completion Standard:</strong> Sets what "done" means for each player. Use this as a handicap; an experienced rigger ties + unties + hanks, while a newer rigger just needs to finish wraps.</p>
+    <p><strong style="color:var(--orange)">Penalties:</strong> "Restart" means a called mistake forces you to untie and begin again while your clock keeps running. "Time +" adds penalty seconds via a button in the center bar.</p>
+  </div>`;
+  body.appendChild(ins);
+
+  for (const [cat, items] of Object.entries(CHALLENGES)) {
+    const sec = document.createElement('div');
+    sec.className = 'info-section';
+    sec.innerHTML = `<h4>${cat}</h4>`;
+    items.forEach(ch => {
+      const it = document.createElement('div');
+      it.className = 'info-item';
+      it.innerHTML = `<div class="info-name">${ch.name} <span class="ch-tier tier-${ch.tier}" style="font-size:8px;padding:1px 6px;margin-left:6px;">T${ch.tier}</span></div><div class="info-desc">${ch.desc}</div>`;
+      sec.appendChild(it);
+    });
+    body.appendChild(sec);
+  }
+  document.getElementById('info-modal').classList.add('open');
+}
+
+// =========================================
+// UTILS
+// =========================================
+function fmt(s) { if (s <= 0) return "00:00"; return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
+function fmtMs(s) { if (s <= 0) return "00:00.0"; const m=Math.floor(s/60),ss=s%60; return `${String(m).padStart(2,'0')}:${ss.toFixed(1).padStart(4,'0')}`; }
+function showScr(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function vib(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
+
+async function getWL() {
+  try { if ('wakeLock' in navigator) { S.wl = await navigator.wakeLock.request('screen'); document.getElementById('wake-indicator').textContent='● AWAKE'; S.wl.addEventListener('release',()=>{document.getElementById('wake-indicator').textContent='';}); } } catch(e){}
+}
+function relWL() { if(S.wl){S.wl.release();S.wl=null;} }
+
+// =========================================
+// GAME
+// =========================================
+function startGame() {
+  S.p1.hcap = document.getElementById('p1-handicap').value;
+  S.p2.hcap = document.getElementById('p2-handicap').value;
+  S.penaltySeconds = parseInt(document.getElementById('penalty-seconds')?.value) || 15;
+  S.p1.time = S.timePerPlayer; S.p2.time = S.timePerPlayer;
+  S.p1.score = 0; S.p2.score = 0; S.p1.pens = 0; S.p2.pens = 0;
+  S.p1.rounds = 0; S.p2.rounds = 0;
+  S.turn = 0; S.running = false; S.paused = false; S.over = false;
+
+  document.getElementById('p1-timer').textContent = fmt(S.p1.time);
+  document.getElementById('p2-timer').textContent = fmt(S.p2.time);
+  document.getElementById('p1-game-challenge').textContent = S.p1.ch.name;
+  document.getElementById('p2-game-challenge').textContent = S.p2.ch.name;
+  document.getElementById('p1-game-handicap').textContent = HANDICAP_LABELS[S.p1.hcap];
+  document.getElementById('p2-game-handicap').textContent = HANDICAP_LABELS[S.p2.hcap];
+  document.getElementById('game-mode-label').textContent = S.mode.toUpperCase();
+
+  const amrap = S.mode === 'amrap';
+  document.getElementById('p1-score-area').style.display = amrap ? 'flex' : 'none';
+  document.getElementById('p2-score-area').style.display = amrap ? 'flex' : 'none';
+  document.getElementById('p1-score').textContent = '0';
+  document.getElementById('p2-score').textContent = '0';
+
+  // Round counters for countdown mode
+  const showRounds = S.mode === 'countdown';
+  document.getElementById('p1-round-area').style.display = showRounds ? 'flex' : 'none';
+  document.getElementById('p2-round-area').style.display = showRounds ? 'flex' : 'none';
+  document.getElementById('p1-rounds').textContent = '0';
+  document.getElementById('p2-rounds').textContent = '0';
+
+  // Penalty buttons show for time and choose modes
+  const showPB = S.penalty === 'time' || S.penalty === 'choose';
+  document.getElementById('p1-penalty-btn').style.display = showPB ? 'flex' : 'none';
+  document.getElementById('p2-penalty-btn').style.display = showPB ? 'flex' : 'none';
+  document.getElementById('game-penalty-label').textContent =
+    S.penalty === 'restart' ? 'RESTART ON MISTAKE' :
+    S.penalty === 'time' ? `−${S.penaltySeconds}s PENALTY` :
+    S.penalty === 'choose' ? 'PENALTY OR RESTART' : '';
+
+  document.getElementById('p1-penalties').textContent = '';
+  document.getElementById('p2-penalties').textContent = '';
+
+  const hints = {
+    countdown: 'Tap either zone to start',
+    amrap: 'Tap to start — then tap your zone each rep',
+    duel: 'Tap either zone to start — tap yours when done'
+  };
+  document.getElementById('p1-hint').textContent = hints[S.mode];
+  document.getElementById('p2-hint').textContent = hints[S.mode];
+
+  document.getElementById('p1-zone').className = 'player-zone inactive';
+  document.getElementById('p2-zone').className = 'player-zone top inactive';
+
+  showScr('game-screen');
+  getWL();
+}
+
+function zoneClick(p) {
+  if (S.over || S.paused) return;
+
+  // START
+  if (!S.running) {
+    S.running = true;
+    S.lastT = performance.now();
+    document.getElementById('p1-hint').textContent = '';
+    document.getElementById('p2-hint').textContent = '';
+
+    if (S.mode === 'countdown') {
+      S.turn = p;
+      updZones();
+    } else {
+      S.turn = 3;
+      updZones();
+    }
+    startTick();
+    vib(30);
+    return;
+  }
+
+  // RUNNING
+  if (S.mode === 'countdown') {
+    // Tap YOUR OWN zone = "I'm done" = stops your clock, starts opponent's
+    if (p === S.turn) {
+      S[`p${p}`].rounds++;
+      document.getElementById(`p${p}-rounds`).textContent = S[`p${p}`].rounds;
+      S.turn = p === 1 ? 2 : 1;
+      updZones();
+      vib(30);
+    }
+  } else if (S.mode === 'duel') {
+    S.over = true;
+    stopTick();
+    vib(100);
+    showResults(p);
+  } else if (S.mode === 'amrap') {
+    // Tap own zone = +1
+    S[`p${p}`].score++;
+    document.getElementById(`p${p}-score`).textContent = S[`p${p}`].score;
+    vib(20);
+  }
+}
+
+function penaltyHit(p) {
+  if (!S.running || S.paused || S.over) return;
+  if (S.penalty !== 'time' && S.penalty !== 'choose') return;
+
+  // Choose mode: for now, button applies the time/rep penalty.
+  // The "restart" option is a verbal/honour call; the player just starts over manually.
+  // The button is labelled so both players understand.
+
+  S[`p${p}`].pens++;
+
+  if (S.mode === 'amrap') {
+    // AMRAP: lose a rep (floor at 0)
+    S[`p${p}`].score = Math.max(0, S[`p${p}`].score - 1);
+    document.getElementById(`p${p}-score`).textContent = S[`p${p}`].score;
+  } else {
+    // Countdown / Duel: lose time off your clock
+    S[`p${p}`].time = Math.max(0, S[`p${p}`].time - S.penaltySeconds);
+    // Check if this killed them
+    if (S[`p${p}`].time <= 0) {
+      S[`p${p}`].time = 0;
+      S.over = true;
+      stopTick();
+      vib(300);
+      document.getElementById(`p${p}-zone`).classList.add('timed-out');
+      setTimeout(() => showResults(p === 1 ? 2 : 1), 1200);
+    }
+  }
+
+  document.getElementById(`p${p}-penalties`).textContent = `✕ ${S[`p${p}`].pens}`;
+  const z = document.getElementById(`p${p}-zone`);
+  z.classList.add('penalty-flash');
+  setTimeout(() => z.classList.remove('penalty-flash'), 300);
+  vib(50);
+}
+
+function updZones() {
+  const p1z = document.getElementById('p1-zone');
+  const p2z = document.getElementById('p2-zone');
+  if (S.mode === 'countdown') {
+    p1z.className = `player-zone ${S.turn===1?'active-turn':'inactive'}`;
+    p2z.className = `player-zone top ${S.turn===2?'active-turn':'inactive'}`;
+  } else {
+    p1z.className = 'player-zone active-turn';
+    p2z.className = 'player-zone top active-turn';
+  }
+}
+
+function startTick() { if(S.intv)clearInterval(S.intv); S.intv=setInterval(tick,50); }
+function stopTick() { if(S.intv){clearInterval(S.intv);S.intv=null;} }
+
+function tick() {
+  if (!S.running||S.paused||S.over) return;
+  const now=performance.now(), dt=(now-S.lastT)/1000;
+  S.lastT=now;
+
+  if (S.mode==='countdown') {
+    const k=`p${S.turn}`;
+    S[k].time-=dt;
+    if(S[k].time<=0){S[k].time=0;S.over=true;stopTick();vib(300);document.getElementById(`${k}-zone`).classList.add('timed-out');setTimeout(()=>showResults(S.turn===1?2:1),1200);}
+    document.getElementById(`${k}-timer`).textContent=S[k].time<10?fmtMs(S[k].time):fmt(S[k].time);
+  } else if (S.mode==='duel') {
+    S.p1.time-=dt;S.p2.time-=dt;
+    [1,2].forEach(n=>{const k=`p${n}`;if(S[k].time<=0){S[k].time=0;if(!S.over){S.over=true;stopTick();vib(300);document.getElementById(`${k}-zone`).classList.add('timed-out');setTimeout(()=>showResults(n===1?2:1),1200);}}document.getElementById(`${k}-timer`).textContent=S[k].time<10?fmtMs(S[k].time):fmt(S[k].time);});
+  } else if (S.mode==='amrap') {
+    S.p1.time-=dt;S.p2.time=S.p1.time;
+    if(S.p1.time<=0){S.p1.time=0;S.p2.time=0;S.over=true;stopTick();vib(300);setTimeout(()=>{const w=S.p1.score>S.p2.score?1:S.p2.score>S.p1.score?2:0;showResults(w);},800);}
+    const d=S.p1.time<10?fmtMs(S.p1.time):fmt(S.p1.time);
+    document.getElementById('p1-timer').textContent=d;
+    document.getElementById('p2-timer').textContent=d;
+  }
+}
+
+function togglePause() {
+  if(S.over)return;
+  S.paused=!S.paused;
+  if(S.paused)document.getElementById('pause-overlay').classList.add('open');
+  else{document.getElementById('pause-overlay').classList.remove('open');S.lastT=performance.now();}
+}
+
+function endGame() {
+  document.getElementById('pause-overlay').classList.remove('open');
+  S.over=true;stopTick();relWL();
+  let w;
+  if (S.mode==='amrap') {
+    w=S.p1.score>S.p2.score?1:S.p2.score>S.p1.score?2:0;
+  } else if (S.mode==='countdown') {
+    // Rounds first, then time remaining as tiebreaker
+    if (S.p1.rounds!==S.p2.rounds) w=S.p1.rounds>S.p2.rounds?1:2;
+    else w=S.p1.time>S.p2.time?1:S.p2.time>S.p1.time?2:0;
+  } else {
+    w=S.p1.time>S.p2.time?1:2;
+  }
+  showResults(w);
+}
+
+function showResults(w) {
+  relWL();stopTick();
+  if(S.mode==='amrap'){
+    document.getElementById('r-p1-score').textContent=S.p1.score+' reps';
+    document.getElementById('r-p2-score').textContent=S.p2.score+' reps';
+    document.getElementById('results-title').textContent=w===0?'Draw':`Player ${w} Wins`;
+  } else if(S.mode==='duel'){
+    document.getElementById('r-p1-score').textContent=fmt(S.timePerPlayer-S.p1.time);
+    document.getElementById('r-p2-score').textContent=fmt(S.timePerPlayer-S.p2.time);
+    document.getElementById('results-title').textContent=`Player ${w} Wins`;
+  } else {
+    // Countdown: show rounds as primary score
+    document.getElementById('r-p1-score').textContent=S.p1.rounds+' rounds';
+    document.getElementById('r-p2-score').textContent=S.p2.rounds+' rounds';
+    document.getElementById('results-title').textContent=(S.p1.time<=0||S.p2.time<=0)?'Time!':(w===0?'Draw':`Player ${w} Wins`);
+  }
+  document.getElementById('r-p1-time').textContent=fmt(S.p1.time)+' remaining';
+  document.getElementById('r-p2-time').textContent=fmt(S.p2.time)+' remaining';
+  document.getElementById('r-p1-challenge').textContent=`${S.p1.ch.name}\n${HANDICAP_LABELS[S.p1.hcap]}`;
+  document.getElementById('r-p2-challenge').textContent=`${S.p2.ch.name}\n${HANDICAP_LABELS[S.p2.hcap]}`;
+  document.getElementById('r-p1-penalties').textContent=S.p1.pens>0?`${S.p1.pens} penalties`:'';
+  document.getElementById('r-p2-penalties').textContent=S.p2.pens>0?`${S.p2.pens} penalties`:'';
+  document.getElementById('r-p1').className=`result-card ${w===1?'winner':''}`;
+  document.getElementById('r-p2').className=`result-card ${w===2?'winner':''}`;
+  showScr('results-screen');
+}
+
+function rematch(){startGame();}
+function goSetup(){relWL();stopTick();showScr('setup-screen');}
+
+// PWA
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('install-prompt').style.display='block';});
+function installApp(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('install-prompt').style.display='none';});}}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+document.addEventListener('dblclick',e=>e.preventDefault());
+</script>
+</body>
+</html>
