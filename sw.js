@@ -1,8 +1,10 @@
-const CACHE_NAME = 'rigger-chess-v2';
+const CACHE_NAME = 'rigger-chess-v3';
+// Derive base path from SW scope so it works on GitHub Pages or any subdirectory
+const BASE = self.registration ? self.registration.scope : '/';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  BASE,
+  BASE + 'index.html',
+  BASE + 'manifest.json',
   'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Archivo+Black&display=swap'
 ];
 
@@ -45,7 +47,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // Offline fallback
         if (event.request.destination === 'document') {
-          return caches.match('/index.html');
+          return caches.match(BASE + 'index.html');
         }
       });
     })
